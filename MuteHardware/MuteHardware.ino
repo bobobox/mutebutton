@@ -5,12 +5,17 @@
   Sends keyboard command to toggle mute status on button press.
 */
 
-// LED setup:
-const int redPin = 9;
-const int greenPin = 10;
-const int greenBrightness = 15; // 0-255
+// LED setup, for lights on main controller unit
+const int redPinMain = 9;
+const int greenPinMain = 10;
+const int greenBrightnessMain = 15; // 0-255
 
-// Mute button setup
+// LED setup, for lights on remote
+const int redPinRemote = 8;
+const int greenPinRemote = 16;
+const int greenBrightnessRemote = 200; // 0-255
+
+// Mute button setup (button located on remote)
 const int muteButtonPin = 2;
 
 // Time after button press during which status update from computer is ignored
@@ -31,8 +36,10 @@ void setup() {
     Serial.begin(9600);
 
     // Pin setup
-    pinMode(redPin, OUTPUT);
-    pinMode(greenPin, OUTPUT);
+    pinMode(redPinMain, OUTPUT);
+    pinMode(redPinRemote, OUTPUT);
+    pinMode(greenPinMain, OUTPUT);
+    pinMode(greenPinRemote, OUTPUT);
     pinMode(muteButtonPin, INPUT_PULLUP);
 
     // Keyboard
@@ -139,17 +146,23 @@ Set outputs based on current state
 */
 
     if (state == 1) {
-        digitalWrite(redPin, HIGH);
-        digitalWrite(greenPin, LOW);
+        digitalWrite(redPinMain, HIGH);
+        digitalWrite(redPinRemote, HIGH);
+        digitalWrite(greenPinMain, LOW);
+        digitalWrite(greenPinRemote, LOW);
     }
     else if (state == 2) {
-        digitalWrite(redPin, LOW);
+        digitalWrite(redPinMain, LOW);
+        digitalWrite(redPinRemote, LOW);
         // Green LED is vastly brighter than red, so PWM it down
-        analogWrite(greenPin, greenBrightness);
+        analogWrite(greenPinMain, greenBrightnessMain);
+        analogWrite(greenPinRemote, greenBrightnessRemote);
     }
     else {
-        digitalWrite(redPin, LOW);
-        digitalWrite(greenPin, LOW);
+        digitalWrite(redPinMain, LOW);
+        digitalWrite(redPinRemote, LOW);
+        digitalWrite(greenPinMain, LOW);
+        digitalWrite(greenPinRemote, LOW);
     }
 
     if (toggleMute) {
