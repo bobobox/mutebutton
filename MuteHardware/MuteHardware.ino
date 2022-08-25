@@ -8,12 +8,12 @@
 // LED setup, for lights on main controller unit
 const int redPinMain = 9;
 const int greenPinMain = 10;
-const int greenBrightnessMain = 15; // 0-255
+const int greenBrightnessMain = 5; // 0-255
 
 // LED setup, for lights on remote
 const int redPinRemote = 8;
-const int greenPinRemote = 16;
-const int greenBrightnessRemote = 200; // 0-255
+const int greenPinRemote = 6;
+const int greenBrightnessRemote = 150; // 0-255
 
 // Mute button setup (button located on remote)
 const int muteButtonPin = 2;
@@ -24,11 +24,13 @@ unsigned long buttonPressTime = 0;
 unsigned long buttonPressStateUpdateLockout = 1500;
 
 // Keystroke setup to toggle mute state on computer
-const char commandKeyStrokes[3] = {KEY_LEFT_GUI, KEY_LEFT_SHIFT, 'a'};
+const char zoomMuteToggleKeystrokes[] = {KEY_LEFT_GUI, KEY_LEFT_SHIFT, 'a'};
+// Keystrokes for when Zoom not active
+const char defaultStateKeystrokes[] = {KEY_LEFT_SHIFT};
 
 // State variable: 0=off, 1=muted,  2=unmuted
 byte state = 0;
-bool toggleMute = false;
+bool sendKeystrokesFlag = false;
 
 void setup() {
 
@@ -49,10 +51,7 @@ void setup() {
 
 void loop() {
 
-    // Ignore button presses if Zoom meeting inactive    
-    if (state != 0) {
-        buttonHandler();
-    }
+    buttonHandler();
 
     serialHandler();
 
@@ -114,7 +113,7 @@ Monitor and debounce button state, and set state for output
             (buttonState != reading) 
             && (reading == LOW)
         ) {
-            toggleMute = true;
+            sendKeystrokesFlag = true;
             state = newStates[state - 1];
             buttonPressTime = timeNow; 
         }
@@ -123,15 +122,15 @@ Monitor and debounce button state, and set state for output
     }
 }
 
-void sendMuteKeystrokes() {
+void sendKeystrokes(char keystrokes[], int seq_length) {
 /*
-Send keystrokes to toggle mute state in Zoom
+Send keystrokes to computer over USB
 */
 
     static int i;
 
-    for (i = 0; i < sizeof(commandKeyStrokes); i++) {
-        Keyboard.press(commandKeyStrokes[i]);
+    for (i = 0; i < seq_length; i++) {
+        Keyboard.press(keystrokes[i]);
     }
 
     delay(50);
@@ -139,6 +138,7 @@ Send keystrokes to toggle mute state in Zoom
     Keyboard.releaseAll();
 
 }
+
 
 void outputsHandler() {
 /*
@@ -165,8 +165,13 @@ Set outputs based on current state
         digitalWrite(greenPinRemote, LOW);
     }
 
-    if (toggleMute) {
-        sendMuteKeystrokes();
-        toggleMute = false;
+    if (sendKeystrokesFlag) {
+        if (state == 0) {
+            sendKeystrokes(defaultStateKeystrokes, sizeof(defaultStateKeystrokes));
+        }
+        else {
+            sendKeystrokes(zoomMuteToggleKeystrokes, sizeof(zoomMuteToggleKeystrokes));
+        }
+        sendKeystrokesFlag = false;
     }
 }
